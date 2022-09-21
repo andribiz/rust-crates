@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    # our runnable applications
+    "crates/axum-rest-api",
+]
+
+[profile.release]
+debug = true
