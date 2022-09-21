@@ -5,8 +5,9 @@ use axum::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use tracing::error;
 
-pub type AxResult<T> = Result<T, AxError>;
+pub type AxResult<T> = Result<AxResponse<T>, AxError>;
 
 #[derive(Clone, Serialize, Debug, Default)]
 pub enum ResponseStatus {
@@ -41,7 +42,7 @@ pub enum AxError {
     AnyhowError(#[from] anyhow::Error),
 }
 
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ApiResponse {
     pub status: ResponseStatus,
     pub message: String,
@@ -58,6 +59,7 @@ impl ApiResponse {
 
 impl IntoResponse for AxError {
     fn into_response(self) -> Response {
+        error!("Error Response: {}", self);
         let (status, error_message) = match self {
             Self::InternalServerErrorWithContext(err) => (StatusCode::INTERNAL_SERVER_ERROR, err),
             Self::NotFound(err) => (StatusCode::NOT_FOUND, err),
@@ -67,14 +69,34 @@ impl IntoResponse for AxError {
                 Self::InvalidLoginAttmpt.to_string(),
             ),
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, Self::Unauthorized.to_string()),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                String::from("unexpected error occurred"),
-            ),
+            Self::BadRequest(err) => (StatusCode::BAD_REQUEST, err),
+            Self::Forbidden => (StatusCode::FORBIDDEN, Self::Forbidden.to_string()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
         let body = Json(ApiResponse::new(error_message));
 
         (status, body).into_response()
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AxResponse<T: Serialize> {
+    pub status: ResponseStatus,
+    pub result: T,
+}
+
+impl<T: Serialize> AxResponse<T> {
+    pub fn new(data: T) -> Self {
+        Self {
+            status: ResponseStatus::OK,
+            result: data,
+        }
+    }
+}
+
+impl<T: Serialize> IntoResponse for AxResponse<T> {
+    fn into_response(self) -> Response {
+        Json(self).into_response()
     }
 }
