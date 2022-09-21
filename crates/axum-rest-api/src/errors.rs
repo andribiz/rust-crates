@@ -6,7 +6,7 @@ use axum::{
 use serde::Serialize;
 use thiserror::Error;
 
-pub type AxResult<T: IntoAxResponse> = Result<T, AxError>;
+pub type AxResult<T> = Result<T, AxError>;
 
 #[derive(Clone, Serialize, Debug, Default)]
 pub enum ResponseStatus {
