@@ -12,10 +12,17 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-pub struct ApiGateway;
+pub struct ApiGateway<'a> {
+    port: u16,
+    root_path: &'a str,
+}
 
-impl ApiGateway {
-    pub async fn serve(port: u16, routes: Router) -> Result<()> {
+impl<'a> ApiGateway<'a> {
+    pub fn new(port: u16, root_path: &'a str) -> Self {
+        Self { port, root_path }
+    }
+
+    pub async fn serve(&self, routes: Router) -> Result<()> {
         tracing_subscriber::registry()
             .with(tracing_subscriber::EnvFilter::new(
                 std::env::var("RUST_LOG").unwrap_or_else(|_| "LOG=debug,tower_http=debug".into()),
@@ -31,12 +38,13 @@ impl ApiGateway {
             .load_shed()
             .into_inner();
 
-        let app = routes
+        let app = Router::new()
+            .nest(self.root_path, routes)
             .fallback(handler_404.into_service())
             .layer(middleware);
 
         info!("Starting Server...");
-        let addr = SocketAddr::from(([0, 0, 0, 0], port));
+        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
         axum::Server::bind(&addr)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
             .with_graceful_shutdown(shutdown_signal())
