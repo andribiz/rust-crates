@@ -2,6 +2,7 @@
 members = [
     # our runnable applications
     "crates/axum-rest-api",
+    "crates/keycloak",
 ]
 
 [profile.release]
