@@ -9,8 +9,6 @@ use std::{net::SocketAddr, time::Duration};
 use tokio::signal;
 use tower::ServiceBuilder;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub struct ApiGateway<'a> {
     port: u16,
@@ -23,13 +21,6 @@ impl<'a> ApiGateway<'a> {
     }
 
     pub async fn serve(&self, routes: Router) -> Result<()> {
-        tracing_subscriber::registry()
-            .with(tracing_subscriber::EnvFilter::new(
-                std::env::var("RUST_LOG").unwrap_or_else(|_| "LOG=debug,tower_http=debug".into()),
-            ))
-            .with(tracing_subscriber::fmt::layer())
-            .init();
-
         let middleware = ServiceBuilder::new()
             .layer(TraceLayer::new_for_http())
             .layer(CorsLayer::permissive())
@@ -43,7 +34,6 @@ impl<'a> ApiGateway<'a> {
             .fallback(handler_404.into_service())
             .layer(middleware);
 
-        info!("Starting Server...");
         let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
         axum::Server::bind(&addr)
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())

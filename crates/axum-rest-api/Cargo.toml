@@ -26,6 +26,5 @@ tower = { version = "0.4", features = [
 ] }
 axum-macros = "0.2.3"
 error-stack = "0.1.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing = "0.1.36"
 anyhow = "1.0.65"

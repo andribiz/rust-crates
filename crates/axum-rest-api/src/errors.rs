@@ -3,13 +3,13 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::error;
 
 pub type AxResult<T> = Result<AxResponse<T>, AxError>;
 
-#[derive(Clone, Serialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub enum ResponseStatus {
     #[default]
     OK,
@@ -42,21 +42,6 @@ pub enum AxError {
     AnyhowError(#[from] anyhow::Error),
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct ApiResponse {
-    pub status: ResponseStatus,
-    pub message: String,
-}
-
-impl ApiResponse {
-    pub fn new(message: String) -> Self {
-        Self {
-            status: ResponseStatus::ERROR,
-            message,
-        }
-    }
-}
-
 impl IntoResponse for AxError {
     fn into_response(self) -> Response {
         error!("Error Response: {}", self);
@@ -74,23 +59,35 @@ impl IntoResponse for AxError {
             _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
-        let body = Json(ApiResponse::new(error_message));
+        // let body = Json(ApiResponse::new(error_message));
+        let body = AxResponse::err(error_message);
 
         (status, body).into_response()
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AxResponse<T: Serialize> {
     pub status: ResponseStatus,
-    pub result: T,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result: Option<T>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<T>,
 }
 
 impl<T: Serialize> AxResponse<T> {
+    pub fn err(data: T) -> Self {
+        Self {
+            status: ResponseStatus::ERROR,
+            error_message: Some(data),
+            result: None,
+        }
+    }
     pub fn new(data: T) -> Self {
         Self {
             status: ResponseStatus::OK,
-            result: data,
+            result: Some(data),
+            error_message: None,
         }
     }
 }
