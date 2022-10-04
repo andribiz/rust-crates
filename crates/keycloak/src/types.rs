@@ -54,13 +54,13 @@ impl TokenRequest {
         }
     }
 
-    pub fn client_id(mut self, client_id: &String) -> Self {
-        self.client_id = client_id.clone();
+    pub fn client_id(mut self, client_id: &str) -> Self {
+        self.client_id = client_id.to_owned();
         self
     }
 
-    pub fn client_secret(mut self, client_secret: &String) -> Self {
-        self.client_secret = client_secret.clone();
+    pub fn client_secret(mut self, client_secret: &str) -> Self {
+        self.client_secret = client_secret.to_owned();
         self
     }
 }
