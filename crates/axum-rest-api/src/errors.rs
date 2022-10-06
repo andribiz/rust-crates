@@ -46,7 +46,10 @@ impl IntoResponse for AxError {
     fn into_response(self) -> Response {
         error!("Error Response: {}", self);
         let (status, error_message) = match self {
-            Self::InternalServerErrorWithContext(err) => (StatusCode::INTERNAL_SERVER_ERROR, err),
+            Self::InternalServerErrorWithContext(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Opps.. we promise to look at it :( ".to_owned(),
+            ),
             Self::NotFound(err) => (StatusCode::NOT_FOUND, err),
             Self::ObjectConflict(err) => (StatusCode::CONFLICT, err),
             Self::InvalidLoginAttmpt => (
