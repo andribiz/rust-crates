@@ -30,26 +30,34 @@ pub enum AxError {
     ApplicationStartup(String),
     #[error("{0}")]
     BadRequest(String),
-    #[error("unexpected error has occurred")]
-    InternalServerError,
-    #[error("{0}")]
-    InternalServerErrorWithContext(String),
     #[error("{0}")]
     ObjectConflict(String),
     #[error(transparent)]
     AxumJsonRejection(#[from] axum::extract::rejection::JsonRejection),
+    #[error("Internal Server error: {0}")]
+    InternalServerErrorWithContext(String),
     #[error(transparent)]
-    AnyhowError(#[from] anyhow::Error),
+    InternalServerErrorWithAnyhow(anyhow::Error),
+}
+
+impl From<anyhow::Error> for AxError {
+    fn from(inner: anyhow::Error) -> Self {
+        AxError::InternalServerErrorWithAnyhow(inner)
+    }
 }
 
 impl IntoResponse for AxError {
     fn into_response(self) -> Response {
         error!("Error Response: {}", self);
         let (status, error_message) = match self {
-            Self::InternalServerErrorWithContext(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Opps.. we promise to look at it :( ".to_owned(),
-            ),
+            Self::InternalServerErrorWithAnyhow(inner) => {
+                error!("Stacktrace: {}", inner.backtrace());
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Opps.. we promise to look at it :( ".to_owned(),
+                )
+            }
             Self::NotFound(err) => (StatusCode::NOT_FOUND, err),
             Self::ObjectConflict(err) => (StatusCode::CONFLICT, err),
             Self::InvalidLoginAttmpt => (
@@ -59,7 +67,10 @@ impl IntoResponse for AxError {
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, Self::Unauthorized.to_string()),
             Self::BadRequest(err) => (StatusCode::BAD_REQUEST, err),
             Self::Forbidden => (StatusCode::FORBIDDEN, Self::Forbidden.to_string()),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Opps.. we promise to look at it :( ".to_owned(),
+            ),
         };
 
         // let body = Json(ApiResponse::new(error_message));
