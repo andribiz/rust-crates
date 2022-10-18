@@ -128,6 +128,32 @@ impl Keycloak {
     //     Ok(())
     // }
 
+    pub async fn get_sc_oauth2_token(
+        &self,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<TokenResponse, KeycloakError> {
+        let request = TokenRequest::client()
+            .client_id(client_id)
+            .client_secret(client_secret);
+        let data = serde_urlencoded::to_string(request)?;
+        let url = format!("{}/token", self.endpoint);
+        let response = Client::new()
+            .post(url)
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(data)
+            .send()
+            .await?;
+        match response.status() {
+            StatusCode::OK => Ok(response.json::<TokenResponse>().await?),
+            StatusCode::UNAUTHORIZED => Err(KeycloakError::UnAuthorized),
+            _ => Err(KeycloakError::ResponseError(
+                response.status(),
+                response.text().await?,
+            )),
+        }
+    }
+
     pub async fn get_oauth2_token(
         &self,
         request: TokenRequest,
