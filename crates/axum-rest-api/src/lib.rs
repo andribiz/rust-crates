@@ -20,12 +20,12 @@ impl<'a> ApiGateway<'a> {
         Self { port, root_path }
     }
 
-    pub async fn serve(&self, routes: Router) -> Result<()> {
+    pub async fn serve(&self, routes: Router, timeout: i64) -> Result<()> {
         let middleware = ServiceBuilder::new()
             .layer(TraceLayer::new_for_http())
             .layer(CorsLayer::permissive())
             .layer(HandleErrorLayer::new(handle_error))
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(timeout))
             .load_shed()
             .into_inner();
 
