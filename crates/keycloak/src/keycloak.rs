@@ -96,6 +96,7 @@ impl Keycloak {
 
     pub async fn load_keys(&self) -> Result<(), KeycloakError> {
         let url = format!("{}/certs", self.endpoint);
+        println!("loading keys: {}", url);
         let response = Client::new().get(url).send().await?;
         match response.status() {
             StatusCode::OK => {
