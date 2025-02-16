@@ -2,7 +2,8 @@ pub mod errors;
 pub mod routes;
 use anyhow::Result;
 use axum::{
-    error_handling::HandleErrorLayer, http::StatusCode, response::IntoResponse, BoxError, Router,
+    error_handling::HandleErrorLayer, handler::Handler, http::StatusCode, response::IntoResponse,
+    BoxError, Router,
 };
 use std::{net::SocketAddr, time::Duration};
 use tokio::signal;
@@ -30,7 +31,7 @@ impl<'a> ApiGateway<'a> {
 
         let app = Router::new()
             .nest(self.root_path, routes)
-            .fallback(handler_404)
+            .fallback(handler_404.into_service())
             .layer(middleware);
 
         let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
