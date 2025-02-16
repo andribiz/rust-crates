@@ -32,8 +32,8 @@ impl Keycloak {
         Self {
             client_id,
             client_secret,
-            endpoint: format!("{}/auth/realms/{}/protocol/openid-connect", url, realm),
-            admin_url: format!("{}/auth/admin/realms/{}", url, realm),
+            endpoint: format!("{}/realms/{}/protocol/openid-connect", url, realm),
+            admin_url: format!("{}/admin/realms/{}", url, realm),
             cert_keys: RwLock::new(None),
             token: RwLock::new(None),
         }
@@ -68,8 +68,8 @@ impl Keycloak {
         Ok(Self {
             client_id,
             client_secret,
-            endpoint: format!("{}/auth/realms/{}/protocol/openid-connect", url, realm),
-            admin_url: format!("{}/auth/admin/realms/{}", url, realm),
+            endpoint: format!("{}/realms/{}/protocol/openid-connect", url, realm),
+            admin_url: format!("{}/admin/realms/{}", url, realm),
             cert_keys: RwLock::new(None),
             token: RwLock::new(None),
         })
